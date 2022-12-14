@@ -1,0 +1,489 @@
+---
+title: "DOE Project Group No. 8"
+author: "Imtiaz Qavi, Md Ariful Haque Miah, Manesh Andiboina"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+The statapult experiment involves exploring the following factors of the system effecting the response (distance thrown):
+
+1.  Pin Elevation
+2.  Bungee Position
+3.  Release Angle
+4.  Type of Ball Thrown
+
+
+```{r}
+knitr::include_graphics("/Users/abir/Documents/IE 5342 DOE/Project/Final/01.jpeg")
+```
+
+
+For the bungee position and pin elevation, the levels were counted bottom up, meaning the lowest pin or bungee position were considered factor low-factor level and higher up as we move the pin or bungee position.
+
+# Project Part 1
+
+
+**Perform a designed experiment to determine the effect of the type of ball on the distance in which the ball is thrown.The Pin Elevation and Bungee Position should both be at their fourth setting, i.e. highest setting.  The Release Angle should be at 90 degrees, with the arm pulled fully back before releasing.  To test this hypothesis, we wish to use a completely randomized design with an alpha around 0.05.**
+
+
+
+```{r}
+knitr::include_graphics("/Users/abir/Documents/IE 5342 DOE/Project/Final/02.jpeg")
+```
+
+
+Required Libraries:
+
+```{r}
+library(agricolae)
+library(GAD)
+library(ggplot2)
+library(DoE.base)
+library(pwr)
+library(MASS)
+```
+
+## Part 1(a)
+
+***Determine how many samples should be collected to detect a mean difference with a large effect (i.e. 90% of the standard deviation) and a pattern of maximum variability with a probability of 55%.***
+
+We are to determine the sample size based on an effect size of d = 0.90 and power of test p = 0.55. We have k = 3 distinct populations (3 types of balls).
+
+The sample size is determined from the following chunk of code:
+
+```{r}
+pwr.anova.test(k=3,n=NULL,f=((0.9*sqrt((3^2)-1))/(2*3)),sig.level = 0.05,power = 0.55)
+```
+
+So, we collect 12 samples per group, i.e 36 samples in total for the 3 types of balls.
+
+## Part 1 (b)
+
+***Propose a layout using the number of samples from part (a) with randomized run order***
+
+The proposed layout is generated with the following code chunk:
+
+```{r}
+trt<-c("golf", "tennis", "rock")
+experimentdesign<-design.crd(trt=trt,r= 12,seed= 5000)
+experimentdesign$book
+```
+
+## 
+
+## Part 1 (c)
+
+***Collect data and record observation in the proposed layout in part 1(b)***
+
+We input the data and define the variables for further calculation as follows:
+
+```{r}
+Obs1<-c(40,43,51,36,44,56,39,61,40,44,55,34,43,40,41,51,40,45,58,59,46,49,36,50,33,37,37,37,36,35,32,46,38,46,31,32)
+
+Balls1<-c(2,1,1,	1,	3,	3,	2,	3,	3,	3,	3,	3,	3,	2,	2,	2,	3,	1,	1,	1,	2,	3,	1,	1,	3,	1,	1,	2,	2,	2,	3,	1,	2,	1,	2,	2)
+Balls1 <- as.factor(Balls1)
+dat1<-data.frame(Obs1,Balls1)
+dat1
+```
+
+
+## Part 1 (d)
+
+***Perform hypothesis test and check residuals. Be sure to comment and take corrective actions if necessary.***
+
+This is a one-factor ANOVA, so for or hypothesis testing, we have-
+
+If $\mu_1$, $\mu_2$, and $\mu_3$ are the means of the Golf, Tennis, and Rock, then-
+
+Null Hypothesis, $H_o$: $\mu_1$ = $\mu_2$ = $\mu_3$ = $\mu$
+
+Alternative Hypothesis, $H_a$: At least one of the mean differs.
+
+Our considered level of significance is $\alpha$ = 0.05
+
+Now, we perform ANOVA on our proposed model:
+
+```{r}
+model_aov<-aov(Obs1~Balls1, data = dat1)
+summary(model_aov)
+plot(model_aov)
+```
+
+From our ANOVA analysis, we can see that the obtained p-value is 0.11 which is greater than our level of significance of $\alpha$ = 0.05. Hence, we fail to reject our null hypothesis. Hence, we conclude that the mean distance thrown for all the 3 different types of balls are the same.
+
+Also from the residual plots, we see that the width of the variance are fairly equal in the residuals vs fitted values plot. Also, the residuals appear to be normally distributed. So, our assumption of normality and equal variance for ANOVA stands out. Hence, our model is adequate.
+
+## Part 1 (e)
+
+***If the null hypothesis is rejected, investigate pairwise comparisons.***
+
+Although, we did not reject the null hypothesis as per the original data that we obtained, we still move forward and make the pairwise comparison. For the pairwise comparison we resort to Tukey's HSD post-hoc test:
+
+```{r}
+TukeyHSD(model_aov)
+plot(TukeyHSD(model_aov))
+```
+
+So from the pairwise test, we see that all the pairs whether 2-1, 3-1, or 3-2- All of them have 0 passing through them. So, none of them are significantly different pairs. This is obvious since we failed to reject our null hypothesis of the ANOVA test in the first place.
+
+## Part 1 (f)
+
+***State all findings and make recommendations.***
+
+Major findings:
+
+1.  The ball type has no effect on the distance thrown.
+2.  Our ANOVA model suggested that the residuals are normally distributed with nearly equal variance; Hence our model is adequate.
+3.  We did not find any significant pairwise difference, which is obvious since we failed to reject our null hypothesis.
+
+Future Recommendations:
+
+The elasticity of the band kept changing after every throw. This could have impacted our result. Also, we observed that the band we used used for the experiment was not a single-piece of band, but rather 3 bands tied to each other. After a while in our experiment, we observed that the ties were coming loose. So, its very much probable that the tension in the bands kept changing after each throw. Hence the experiment could have additional nuisance variable which is the changing tension of the band over time or after each throws. One suggestion to overcome this would be to use a single rubber-band instead of using a make-shift band with multiple ties. Another approach could be that we perform a block-experiment. Such as, suppose we have 36 data to collect. We assume that the tension keeps changing over every 6 throws. So we can partition our collected data into 6 blocks. That way, we can ensure that the change of tension does not have any effect on our final model.
+
+# Project Part 2
+
+**Perform a designed experiment to determine the effect of Pin Elevation and Release Angle on distance in which a red ball is thrown when the Bungee Position is fixed at the second position. Settings one and three of Pin Elevation should be investigated as a fixed effect, as well as settings of the Release Angle corresponding to 90, 110, 120 degrees as a random effect. The design should be replicated three times.**
+
+## Part 2(a)
+
+***State model equation with the null and alternative hypotheses to be tested. In addition, state the level of significance that will be used in your analysis.***
+
+The current part of the project investigates two factors with different levels. They are as follows:
+
+1.  Pin Elevation (2 levels: 1 and 3)- Fixed Effect.
+2.  Throw Angle (3 levels: 90,110, and 120 degrees)-Random Effects.
+
+Hence, we have a mixed model effect with the following model equation:
+
+$Y_{ijk}$ = $\mu + \alpha_i + \beta_j + \alpha\beta_{ij} + \epsilon_{ijk}$
+
+
+Where, μ = Grand Mean
+
+$\alpha_i$ = Fixed Effect of Factor 1 (Pin Elevation)
+
+$\beta_j$ = Random effect of Factor 2 (Angle)
+
+$\alpha\beta_{ij}$ = Two-way interaction effect
+
+$\epsilon_{ijk}$ = Random Error
+
+Null Hypothesis, Ho:
+
+$\alpha_i$ = 0 (For Fixed Effect)
+
+$\sigma^2_\beta$ = 0 (For Random Effect)
+
+$\sigma^2_{\alpha\beta}$ = 0 (For random Interaction Effect)
+
+Alternative Hypothesis, Ha:
+
+$\alpha_i$  $\neq$ 0 (For Fixed Effect)
+
+$\sigma^2_\beta$  $\neq$  0 (For Random Effect)
+
+$\sigma^2_{\alpha\beta}$  $\neq$  0 (For random Interaction Effect)
+
+Level of Significance: For this part of the project, we choose a level of significance of **0.05.**
+
+## Part 2(b)
+
+***Propose a layout with a randomized run order.***
+
+The proposed run order would be a factorial design with 3 replications for each sets of observations. The order of run/ or data collection is considered completely random (CRD). We did not include any blocking effect in this study. The following codes used to generate our factorial table:
+
+```{r}
+treat2 <- c(2,3)
+design2 <- design.ab(trt = treat2, r = 3, design = "crd", seed = 5000)
+design2$book
+```
+
+The generated table was then used to collect data for our response variable (distance) in the subsequent sections. Here we have A = 1,2 corresponding to pin elevation levels 1 and 3 respectively. Also B = 1,2,3 corresponding to release angle of 90,110,120 degrees respectively
+
+## Part 2(c)
+
+***Collect data and record observations on the layout proposed in part (a)***
+
+The data is collected as per the instructions provided in the original question. The following chunks of code was used to enter and sort data into the r compiler:
+
+```{r}
+elevation2 <- c(3,1,3,3,3,1,1,3,1,1,1,1,3,3,3,1,1,3)
+angle2 <- c(120,120,120,90,90,110,90,110,90,110,120,110,110,120,110,120,90,90)
+distance2 <- c(41,13,31,39,47,23,26,50,30,24,12,24,48,33,47,10,25,53)
+elevation2 <- as.fixed(elevation2)
+angle2 <- as.random(angle2)
+data2 <- data.frame(elevation2, angle2, distance2)
+str(data2)
+data2
+```
+
+
+## 
+
+## Part 2(d)
+
+***Test the hypotheses and state conclusions, determining those effects that are significant. Show any plots that might be useful/necessary to show your findings. You may also show residual plots and make appropriate comments, but do not transform the data (i.e. use the raw data regardless of normality and variance constancy).***
+
+We perform the analysis of variance (ANOVA) based on our initial hypothesis shown in part2(a), with mixed model consideration and level of significance at 0.05.
+
+The following code chunk was used to calculate the ANOVA results considering interaction events.
+
+```{r}
+anova2 <- aov(distance2~elevation2+angle2+elevation2*angle2)
+gad(anova2)
+
+interaction.plot(x.factor = angle2, trace.factor = elevation2, response = distance2, main = "Elevation vs Angle interaction", xlab = "Angle", ylab = "Distance", col = c("Red", "Blue"))
+```
+
+From our ANOVA table, we observe that our P-values for both the factors (elevation and angle) are less than $\alpha$ = 0.05 level of significance. Hence, both the factors (elevation and angle) has significant effect on the response variable (distance).
+
+Hence, we reject the null hypothesis $H_0$ for both the factors.
+
+Also, the interaction of the angle and elevation combined did not seem to have any significant effect on the distance. Thus, we fail to reject the null hypothesis $H_0$.
+
+This is also evident from the interaction plot that shows that the difference in distance thrown remains fairly similar for different levels of elevation at their corresponding angle levels. The lines are fairly parallel.
+
+Next, we analyze the residuals to check the model adequacy:
+
+```{r}
+plot(anova2)
+```
+
+From the residual plots, we observe that although the residuals have fairly a decent normal distribution, the variance does not appear to be constant as inferred from the residuals vs fitted values plot.
+
+Hence, we can conclude that the strong ANOVA assumption of constant variance has been violated. But we did not take any other measures since the question asked us not to transform the data.
+
+# Project Part 3
+
+**Perform a designed experiment to determine the effect of the available factors of Pin Elevation, Bungee Position, Release Angle, and Ball Type on distance in which a ball is thrown.  Design this experiment as a single replicate of a $2^4$ factorial design with the low and high level of the factors.**
+
+
+## Part 3(a)
+
+***Propose a data collection layout with a randomized run order***
+
+The proposed layout is generated as follows:
+
+```{r}
+treatment3 <- c(2,2,2,2)
+table3 <- design.ab(trt = treatment3, seed = 5000, r = 1, design = "crd")
+table3$book
+```
+
+## Part 3(b)
+
+***Collect data and record observations*** 
+
+The data is collected and entered into R using the following chunks of code:
+
+```{r}
+Pin_Elevation <- c(-1,1,-1,1,1,1,1,-1,1,1,-1,1,-1,-1,-1,-1)
+Bungee_Position <- c(1,-1,-1,-1,1,-1,1,-1,1,-1,1,1,-1,-1,1,1)
+Release_Angle <- c(1,1,-1,-1,1,-1,-1,1,1,1,1,-1,-1,1,-1,-1)
+Ball_Type <- c(1,1,-1,-1,1,1,1,1,-1,-1,-1,-1,1,-1,-1,1)
+Obs <- c(24,35,21,42,58,41,44,18,47,45,24,53,20,19,23,23)
+dat <- data.frame(Pin_Elevation,Bungee_Position,Release_Angle,Ball_Type,Obs)
+dat
+
+```
+
+## Part 3(c)
+
+***State model equation and determine what factors/interactions appear to be significant (show any plots that were used in making this determination)***
+
+This is a single replicate of a $2^4$ factorial design, where the number of factors = 4 and each factor has 2 levels (with low and high).
+
+Model Equation:
+
+$Y_{ijklm}$ = $\mu+\alpha_i+\beta_j+\alpha\beta_{ij}+\gamma_k+\alpha\gamma_{ik}+\beta\gamma_{jk}+\alpha\beta\gamma_{ijk}+\delta_l+\alpha\delta_{il}+\beta\delta_{jl}+\alpha\beta\delta_{ijl}+\gamma\delta_{kl}+\alpha\gamma\delta_{ikl}+\beta\gamma\delta_{jkl}+\alpha\beta\gamma\delta_{ijkl}+\epsilon_{ijklm}$
+
+Where $\mu$, $\alpha_i$, $\beta_j$, $\gamma_k$, $\delta_l$, and $\epsilon$\~N(0,$\sigma^2$) are the Grand mean, main effects of the factor Pin Elevation, Bungee Position, Release Angle, the Ball Type and the Random Error respectively.
+
+```{r}
+model <- lm(Obs~Pin_Elevation*Bungee_Position*Release_Angle*Ball_Type,data=dat)
+coef(model)
+halfnormal(model)
+
+model2 <- lm(Obs~Pin_Elevation+Bungee_Position,data=dat)
+summary(model2)
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Bungee_Position, response = dat$Obs, main = "Bungee Position vs Pin Elevation interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Red", "Blue"))
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Release_Angle, response = dat$Obs, main = "Bungee Position vs Release Angle interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Green", "Pink"))
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Ball_Type, response = dat$Obs, main = "Bungee Position vs Ball Type interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Black", "orange"))
+```
+
+From the half normal plot, we see that only the factors Pin Elevation and the Bungee Position are significant and the remaining factors/interaction terms are not significant and they look alike the random error term $\epsilon_{ijklm}$.
+After pulling the insignificant terms into the random error term, we also see that Pin Elevation and the Bungee Position's are still significant.
+
+Also in the interaction plots, we do not see any significant cross-over in terms of converging or diverging lines. The lines are fairly parallel. So there isn't any interaction between the factors.
+
+## Part 3(d)
+
+
+***After using insignificant factors/interactions to create an error term, perform ANOVA to determine a final model equation using an alpha = 0.05***
+
+```{r}
+library(GAD)
+Pin_Elevation <- c(-1,1,-1,1,1,1,1,-1,1,1,-1,1,-1,-1,-1,-1)
+Bungee_Position <- c(1,-1,-1,-1,1,-1,1,-1,1,-1,1,1,-1,-1,1,1)
+Obs <- c(24,35,21,42,58,41,44,18,47,45,24,53,20,19,23,23)
+Pin_Elevation <- as.fixed(Pin_Elevation)
+Bungee_Position <- as.fixed(Bungee_Position)
+dat <- data.frame(Pin_Elevation,Bungee_Position,Obs)
+dat
+model <- aov(Obs~Pin_Elevation+Bungee_Position,data=dat)
+gad(model)
+```
+
+Hypothesis Testing:
+
+Null Hypothesis $H_0$: $\alpha_i=0$ for all i
+
+Alternative Hypothesis $H_a$: $\alpha_i\neq0$ for some i
+
+Null Hypothesis $H_0$: $\beta_j=0$ for all j
+
+Alternative Hypothesis $H_a$: $\beta_j\neq0$ for some j
+
+From the summary of ANOVA, we see that the p-values of the factors Pin Elevation (2.01e-08) and the Bungee Position (0.00447) are less than $\alpha=0.05$ level of significance and therefore, we reject the Null hypothesis. Hence, these two factors Pin Elevation and Bungee Position have a significant impact on the model.
+
+Final Model Equation:
+
+$Y_{ijm} = \mu+\alpha_i+\beta_j+\epsilon_{ijm}$
+
+Where, $\mu$, $\alpha_i$, $\beta_j$, and $\epsilon_{ijm}$\~N(0,$\sigma^2$) are the Grand mean, the main effect of the factors Pin Elevation, Bungee Position and the Random Error respectively.
+
+# Appendix
+
+## Complete Code Chunk
+
+```{r eval = FALSE}
+#Required Libraries
+library(agricolae)
+library(GAD)
+library(ggplot2)
+library(DoE.base)
+
+## Project Part 1
+## Part 1(a)
+
+pwr.anova.test(k=3,n=NULL,f=((0.9*sqrt((3^2)-1))/(2*3)),sig.level = 0.05,power = 0.55)
+
+## Part 1(b)
+
+trt<-c("golf", "tennis", "rock")
+experimentdesign<-design.crd(trt=trt,r= 12,seed= 5000)
+experimentdesign$book
+
+## Part 1(c)
+
+Obs1<-c(40,43,51,36,44,56,39,61,40,44,55,34,43,40,41,51,40,45,58,59,46,49,36,50,33,37,37,37,36,35,32,46,38,46,31,32)
+
+Balls1<-c(2,1,1,	1,	3,	3,	2,	3,	3,	3,	3,	3,	3,	2,	2,	2,	3,	1,	1,	1,	2,	3,	1,	1,	3,	1,	1,	2,	2,	2,	3,	1,	2,	1,	2,	2)
+Balls1 <- as.factor(Balls1)
+dat1<-data.frame(Obs1,Balls1)
+dat1
+
+## Part 1(d)
+
+model_aov<-aov(Obs1~Balls1, data = dat1)
+summary(model_aov)
+plot(model_aov)
+
+## Part 1(e)
+
+TukeyHSD(model_aov)
+plot(TukeyHSD(model_aov))
+
+## Project Part 2
+## Part 2(b)
+
+treat2 <- c(2,3)
+design2 <- design.ab(trt = treat2, r = 3, design = "crd", seed = 5000)
+design2$book
+
+## Part 2(c)
+
+elevation2 <- c(3,1,3,3,3,1,1,3,1,1,1,1,3,3,3,1,1,3)
+angle2 <- c(120,120,120,90,90,110,90,110,90,110,120,110,110,120,110,120,90,90)
+distance2 <- c(41,13,31,39,47,23,26,50,30,24,12,24,48,33,47,10,25,53)
+elevation2 <- as.fixed(elevation2)
+angle2 <- as.random(angle2)
+data2 <- data.frame(elevation2, angle2, distance2)
+str(data2)
+data2
+
+## Part 2(d)
+
+anova2 <- aov(distance2~elevation2+angle2+elevation2*angle2)
+gad(anova2)
+
+interaction.plot(x.factor = angle2, trace.factor = elevation2, response = distance2, main = "Elevation vs Angle interaction", xlab = "Angle", ylab = "Distance", col = c("Red", "Blue"))
+plot(anova2)
+
+## Project Part 3
+## Part 3(a)
+
+treatment3 <- c(2,2,2,2)
+table3 <- design.ab(trt = treatment3, seed = 5000, r = 1, design = "crd")
+table3$book
+
+## Part 3(b)
+
+Pin_Elevation <- c(-1,1,-1,1,1,1,1,-1,1,1,-1,1,-1,-1,-1,-1)
+Bungee_Position <- c(1,-1,-1,-1,1,-1,1,-1,1,-1,1,1,-1,-1,1,1)
+Release_Angle <- c(1,1,-1,-1,1,-1,-1,1,1,1,1,-1,-1,1,-1,-1)
+Ball_Type <- c(1,1,-1,-1,1,1,1,1,-1,-1,-1,-1,1,-1,-1,1)
+Obs <- c(24,35,21,42,58,41,44,18,47,45,24,53,20,19,23,23)
+dat <- data.frame(Pin_Elevation,Bungee_Position,Release_Angle,Ball_Type,Obs)
+dat
+
+## Part 3(c)
+
+model <- lm(Obs~Pin_Elevation*Bungee_Position*Release_Angle*Ball_Type,data=dat)
+coef(model)
+halfnormal(model)
+
+model2 <- lm(Obs~Pin_Elevation+Bungee_Position,data=dat)
+summary(model2)
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Bungee_Position, response = dat$Obs, main = "Bungee Position vs Pin Elevation interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Red", "Blue"))
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Release_Angle, response = dat$Obs, main = "Bungee Position vs Release Angle interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Green", "Pink"))
+
+interaction.plot(x.factor = dat$Pin_Elevation, trace.factor = dat$Ball_Type, response = dat$Obs, main = "Bungee Position vs Ball Type interaction",  xlab = "Pin Elevation", ylab = "Distance", col = c("Black", "orange"))
+
+## Part 3(d)
+
+library(GAD)
+Pin_Elevation <- c(-1,1,-1,1,1,1,1,-1,1,1,-1,1,-1,-1,-1,-1)
+Bungee_Position <- c(1,-1,-1,-1,1,-1,1,-1,1,-1,1,1,-1,-1,1,1)
+Obs <- c(24,35,21,42,58,41,44,18,47,45,24,53,20,19,23,23)
+Pin_Elevation <- as.fixed(Pin_Elevation)
+Bungee_Position <- as.fixed(Bungee_Position)
+dat <- data.frame(Pin_Elevation,Bungee_Position,Obs)
+dat
+model <- aov(Obs~Pin_Elevation+Bungee_Position,data=dat)
+gad(model)
+```
+
+## Acknowledgement
+
+At the very outset of this report, we extend our heartfelt gratitude to Dr. Timothy Matis and Andrea for their guidance and instructions in accomplishing this project.
+
+## References
+
+1. Montgomery, Douglas C.. Design and Analysis of Experiments. United Kingdom, Wiley, 2013.
+2. RStudio cheat sheets (https://www.rstudio.com/resources/cheatsheets/)
+3. Texas Tech University - IE 5342, Course material and videos by Dr. Timothy Matis.
+4. R (https://cran.r-project.org/) and RStudio (https://www.rstudio.com/products/rstudio/#rstudio-desktop)
